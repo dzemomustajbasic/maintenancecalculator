@@ -106,7 +106,7 @@ def calculate_fees_view(request):
             # Perform the fee calculation logic
             results_df = patent_df.copy()
             date_types = locate_country_code_in_fees(patent_info, fees_info)
-            results_df['Date Type'] = date_types.get('Date Type')
+            results_df['Date Type'] = 'issued date' # Need to fix
             print("EVO DATE TAJPOVA", date_types)
 
             
