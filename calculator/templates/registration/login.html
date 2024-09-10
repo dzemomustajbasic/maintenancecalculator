@@ -1,0 +1,24 @@
+{% extends "calculator/base.html" %}
+
+{% block content %}
+<div class="login-container">
+    <h2 class="login-heading">Login</h2>
+    <form method="post" class="login-form">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" name="username" id="username" required>
+        </div>
+        <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" name="password" id="password" required>
+        </div>
+        <button type="submit" class="btn login-btn">Login</button>
+    </form>
+    {% if messages %}
+    {% for message in messages %}
+        <p>{{ message }}</p>
+    {% endfor %}
+{% endif %}
+</div>
+{% endblock %}

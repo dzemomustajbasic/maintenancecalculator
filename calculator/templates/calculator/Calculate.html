@@ -1,0 +1,90 @@
+{% extends "calculator/base.html" %}
+
+{% block content %}
+<div class="calc-page-container">
+    <!-- Left: Calculation Form -->
+    <div class="calc-container">
+        <h2 class="calc-heading">Maintenance Calculator</h2>
+
+        <!-- User Manual Section -->
+        <div class="calc-user-manual">
+            <h3>Instructions for Uploading Files</h3>
+            <p>Please make sure your Excel file contains the following columns:</p>
+            <ul>
+                <li><strong>Patent / Publication Number:</strong> The unique identifier for the patent.</li>
+                <li><strong>Country Code:</strong> The two-letter country code where the patent was filed.</li>
+                <li><strong>Priority Date:</strong> The earliest date of filing.</li>
+                <li><strong>Filing Date:</strong> The date when the patent was filed.</li>
+                <li><strong>Issued Date:</strong> The date when the patent was granted.</li>
+                <li><strong>Expiration Date:</strong> The date when the patent expires.</li>
+                <li><strong>Number of Claims:</strong> The number of claims made in the patent.</li>
+            </ul>
+            <p>The file must be in .xlsx format and should not contain any empty rows or irrelevant data.</p>
+        </div>
+
+        <form method="post" enctype="multipart/form-data" class="calc-form">
+            {% csrf_token %}
+            <div class="calc-form-group">
+                {{ form.file.label_tag }}
+                <label class="calc-custom-file-upload">
+                    {{ form.file }}
+                    Browse
+                </label>
+            </div>
+
+            <button type="submit" class="calc-btn">Submit</button>
+        </form>
+
+        {% if download_url %}
+            <a href="{{ download_url }}" class="calc-btn calc-btn-success">Download File</a>
+        {% endif %}
+    </div>
+
+    <!-- Right: Fees Dollars Section -->
+    <div class="calc-fees-container">
+        <h2 class="fees-heading">Fees Dollars</h2>
+        
+        <div class="fees-button-container">
+            <!-- Download Button -->
+            <a href="{% url 'download_fees' %}" class="btn fees-download-btn">Download FeesDollars.xlsx</a>
+        </div>
+
+        <!-- Upload Form -->
+        <form method="post" action="{% url 'upload_fees' %}" enctype="multipart/form-data" class="fees-upload-form">
+            {% csrf_token %}
+            <label class="fees-custom-file-upload">
+                <input type="file" name="fees_file" accept=".xlsx" required>
+                Choose File
+            </label>
+            <button type="submit" class="btn fees-upload-btn">Upload Updated File</button>
+        </form>
+    </div>
+</div>
+
+<!-- Results Repository Section -->
+<div class="calc-results-container">
+    <h2 class="calc-results-heading">Maintenance Fee Storage</h2>
+
+    <form id="download-form" method="post" action="{% url 'bulk_download' %}" class="calc-results-form">
+        {% csrf_token %}
+        <div class="calc-repository-sections">
+            <div class="calc-repository-section">
+                <!-- Scrollable area for files -->
+                <div class="calc-scrollable">
+                    <ul class="calc-file-list">
+                        {% for file in result_files_calculation %}
+                            <li class="calc-file-item" onclick="toggleCheckbox(this)">
+                                <label>
+                                    <input type="checkbox" name="selected_files" value="{{ file.filename }}" class="calc-file-checkbox">
+                                    <span class="calc-file-name">{{ file.filename }}</span>
+                                    <span class="calc-file-date">By: {{ file.created_by.username }} on {{ file.created_at|date:"Y-m-d" }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="calc-btn">Download Selected Files</button>
+    </form>
+</div>
+{% endblock %}

@@ -1,0 +1,116 @@
+{% extends "calculator/base.html" %}
+
+{% block content %}
+<div class="gpt-page-container">
+    <!-- Left Side: Custom Prompts -->
+    <div class="gpt-custom-prompts">
+        <h3>Custom Prompts</h3>
+        
+        <!-- TIPA Dropdown -->
+        <div class="dropdown">
+            <button class="dropdown-btn" onclick="toggleDropdown('tipa-dropdown')">TIPA</button>
+            <div id="tipa-dropdown" class="dropdown-content">
+                <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPA Prompt 1')">TIPA Prompt 1</a>
+                <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPA Prompt 2')">TIPA Prompt 2</a>
+                <!-- Add more TIPA prompts here -->
+            </div>
+        </div>
+
+        <!-- TIPX Dropdown -->
+        <div class="dropdown">
+            <button class="dropdown-btn" onclick="toggleDropdown('tipx-dropdown')">TIPX</button>
+            <div id="tipx-dropdown" class="dropdown-content">
+                <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPX Prompt 1')">TIPX Prompt 1</a>
+                <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPX Prompt 2')">TIPX Prompt 2</a>
+                <!-- Add more TIPX prompts here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Tool: GPT Tool -->
+    <div class="gpt-container">
+        <h2 class="gpt-heading">GPT Categorization</h2>
+    
+        <form method="post" enctype="multipart/form-data" class="gpt-form">
+            {% csrf_token %}
+            <div class="form-group model-prefix-container">
+                {{ form.model.label_tag }}
+                {{ form.model }}
+    
+                <!-- Prefix Selector -->
+                <select id="prefix-selector" name="prefix" class="btn model-btn">
+                    <option value="TIPA" selected>TIPA</option>
+                    <option value="TIPX">TIPX</option>
+                </select>
+            </div>
+    
+            <div class="form-group">
+                {{ form.file.label_tag }}
+                <label class="custom-file-upload">
+                    {{ form.file }}
+                    Browse
+                </label>
+            </div>
+    
+            <div class="form-group">
+                {{ form.prompt.label_tag }}
+                {{ form.prompt }}
+            </div>
+    
+            <button type="submit" class="btn">Submit</button>
+        </form>
+
+
+    </div>
+    <!-- Right Side: Loading Section -->
+    <div class="gpt-loading">
+        <h3>Loading...</h3>
+        <p>Please wait while the GPT process is running.</p>
+    </div>
+</div>
+
+<div class="gpt-spacer"></div>
+
+<!-- Results Repository Section -->
+<div class="calc-results-container">
+    <h2 class="calc-results-heading">Stored Results</h2>
+
+    <form id="download-form" method="post" action="{% url 'bulk_download' %}" class="calc-results-form">
+        {% csrf_token %}
+        <div class="calc-repository-sections">
+            <div class="calc-repository-section">
+                <div class="calc-scrollable">
+                    <ul class="calc-file-list">
+                        {% for file in result_files_gpt %}
+                            <li class="calc-file-item" onclick="toggleCheckbox(this)">
+                                <label>
+                                    <input type="checkbox" name="selected_files" value="{{ file.filename }}" class="calc-file-checkbox">
+                                    <span class="calc-file-name">{{ file.filename }}</span>
+                                    <span class="calc-file-date">By: {{ file.created_by.username }} on {{ file.created_at|date:"Y-m-d" }}</span>
+                                </label>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <button type="submit" class="btn">Download Selected Files</button>
+    </form>
+</div>
+<script>
+    function toggleDropdown(id) {
+        var dropdown = document.getElementById(id);
+        dropdown.classList.toggle('show');
+    }
+
+    function insertPrompt(promptText) {
+        var promptField = document.getElementById('id_prompt'); // Ensure this matches the actual ID
+        if (promptField) {
+            promptField.value = promptText;
+        } else {
+            console.error('Prompt field not found.');
+        }
+    }
+</script>
+
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'calculator/base.html' %}
+
+{% block title %}Fees Dollars{% endblock %}
+
+{% block content %}
+<div class="table-window">
+    <h2>Fees Dollars</h2>
+
+    <div class="button-container">
+        <!-- Download Button -->
+        <a href="{% url 'download_fees' %}" class="btn btn-primary download-btn">Download FeesDollars.xlsx</a>
+    </div>
+
+    <!-- Upload Form -->
+    <form method="post" action="{% url 'upload_fees' %}" enctype="multipart/form-data" class="upload-form">
+        {% csrf_token %}
+        <label class="custom-file-upload">
+            <input type="file" name="fees_file" accept=".xlsx" required>
+            Choose File
+        </label>
+        <button type="submit" class="btn btn-success upload-btn">Upload Updated File</button>
+    </form>
+
+    <div class="table-container">
+        <table id="fees-table" class="table table-striped table-dark">
+            {{ data|safe }}
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+Prompt: JUST WRITE "KENO"
+Model: gpt-4o-mini
+Created at: 2024-08-20 12:01:08.769618
+
+Project: TIPX
+Prompt: just write: 'SMLJ'
+Model: gpt-4o-mini
+Created at: 2024-08-20 12:04:23.613512
+
+Project: TIPA_0004
+Prompt: type: 'project;
+Model: gpt-4o-mini
+Created at: 2024-08-20 12:06:48.757597
+
+Project: TIPA_0005
+Prompt: Just type: "ssasasa"
+Model: gpt-4o-mini
+Created at: 2024-08-20 14:22:05.961660
+
+Project: TIPA_0006
+Created by: kenoza
+Prompt: type: :yayaya:
+Model: gpt-4o-mini
+Created at: 2024-08-20 14:25:37.845947
+
+Project: TIPA_0007
+Created by: kenoza
+Prompt: write aaaa
+Model: gpt-4o-mini
+Created at: 2024-08-22 16:20:00.360607
+
+Project: TIPA_0006
+Created by: kenoza
+Prompt: Just say hello
+Model: gpt-4o-mini
+Created at: 2024-09-09 22:27:35.487770
+
+Project: TIPX_0003
+Created by: kenoza
+Prompt: Say heloo
+Model: gpt-3.5-turbo-0125
+Created at: 2024-09-10 00:13:15.809248
+
+Project: TIPX_0004
+Created by: kenoza
+Prompt: Say heloo
+Model: gpt-3.5-turbo-0125
+Created at: 2024-09-10 00:14:01.120817
+
+Project: TIPX_0005
+Created by: kenoza
+Prompt: Just say hello
+Model: gpt-3.5-turbo-0125
+Created at: 2024-09-10 00:14:48.745642
+
+Project: TIPA_0006
+Created by: kenoza
+Prompt: I am the best ever
+Model: gpt-4o-mini
+Created at: 2024-09-10 00:15:55.628176
+
+Project: TIPA_0001
+Created by: kenoza
+Prompt: Say something
+Model: gpt-4o-mini
+Created at: 2024-09-10 00:18:33.285000
+
