@@ -11,12 +11,9 @@ def locate_country_code_in_fees(patent_info, fees_info):
     """
     date_types = {}
 
-    print("locate country code fees info:", fees_info)
     # Extract country codes from patent_info
     for patent in patent_info:
-        # Potrebno ispraviti da pravilno nalazi kodove...
         patent_number, _, _, _, _, country, _ = patent
-        print("KOD", country)
 
         # Check if country codes exist as columns in fees_info
         if country in fees_info.columns:
@@ -35,3 +32,4 @@ def locate_country_code_in_fees(patent_info, fees_info):
             print(f"Country code {country} not found in fees data.")
 
     return date_types
+

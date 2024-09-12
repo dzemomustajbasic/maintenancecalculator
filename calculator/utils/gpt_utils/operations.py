@@ -24,20 +24,7 @@ def load_config():
 
 # Funkcija za pozivanje GPT modela
 def call_gpt_model(model, prompt, input_text, response_list, index, api_key):
-    """
-    Call the GPT model to categorize the input text based on the given prompt.
     
-    Parameters:
-    - model: The GPT model to use (e.g., 'gpt-4o-mini').
-    - prompt: The prompt used for the categorization.
-    - input_text: The text to be analyzed and categorized.
-    - response_list: List to store the responses from multiple threads.
-    - index: Index in response_list to store this thread's result.
-    - api_key: API key for authenticating the GPT model call.
-    
-    Returns:
-    - Populates the response_list with the category name or an error message.
-    """
     try:
         client = OpenAI(api_key=api_key)
 
@@ -61,19 +48,7 @@ def call_gpt_model(model, prompt, input_text, response_list, index, api_key):
 
 # Funkcija za procesiranje više zahteva sa rate limiting-om
 def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
-    """
-    Handles multiple GPT requests in parallel using threading and ensures
-    that requests are limited to a specific rate.
-
-    Parameters:
-    - model: The GPT model to use.
-    - prompt: The prompt to be used for all requests.
-    - inputs: List of input texts to be analyzed.
-    - rate_limit_per_second: Maximum number of requests per second to avoid rate limiting.
-    
-    Returns:
-    - List of responses from the GPT API for each input.
-    """
+   
     config = load_config()
     api_key = config.get('OPENAI_API_KEY')
 
@@ -102,9 +77,7 @@ def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
 
     
 def clean_and_extract_relevant_columns(excel_file_path):
-    """
-    Load an Excel file and combine 'Patent / Publication Number', 'Title', and 'First Claim' into a single column.
-    """
+   
     try:
         # Read the Excel file
         df = pd.read_excel(excel_file_path)
@@ -143,9 +116,7 @@ def categorize_claims(df, model, prompt):
     return df
 
 def save_to_excel(df, output_file_path):
-    """
-    Save the processed DataFrame with the 'GPT Category' column to a new Excel file.
-    """
+    
     try:
         df.to_excel(output_file_path, index=False)
     except Exception as e:

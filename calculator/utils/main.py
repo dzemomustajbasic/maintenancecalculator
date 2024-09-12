@@ -7,13 +7,13 @@ from total import add_total_fees_per_patent, calculate_grand_total
 from overview import create_overview_sheet, format_dates_and_currency
 from calculation import calculate_fees_filing_date, calculate_fees_issued_date, post_process_fees
 import datetime as datetime
-
+import pandas as pd
 
 def main():
     # Specify the file path to your Excel file
-    input_file_path = 'C:/Users/PC/Desktop/input.xlsx'
-    fees_file_path = 'C:/Users/PC/Desktop/FeesDollars.xlsx'
-    output_file_path = 'C:/Users/PC/Desktop/outputASDASDASDASD.xlsx'
+    input_file_path = 'C:/Users/Eric/Desktop/input.xlsx'
+    fees_file_path = 'C:/Users/Eric/Desktop/FeesDollars.xlsx'
+    output_file_path = 'C:/Users/Eric/Desktop/outputASDASDASDASD.xlsx'
 
     # Read the patent data (returns both full and processed dataframes)
     full_patent_df, patent_df = read_patent_data(input_file_path)

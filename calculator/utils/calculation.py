@@ -4,25 +4,16 @@ import numpy as np
 
 
 def check_year_inclusion(date, date_type):
-    """
-    Check if the current year's fee should be included.
 
-    Parameters:
-    - date (datetime.date): The filing or issued date of the patent.
-    - date_type (str): The type of date provided ('filing' or 'issued').
-
-    Returns:
-    - include_current_year (bool): Whether to include the current year in the calculations.
-    """
     today = pd.Timestamp.today().date()
     current_month_day = (today.month, today.day)
 
-    if date_type == 'filing date':
+    if date_type == 'file date':
         comparison_month_day = (date.month, date.day)
-    elif date_type == 'issued date':
+    elif date_type == 'publication date':
         comparison_month_day = (date.month, date.day)
     else:
-        raise ValueError(f"Invalid date type: {date_type}. Expected 'filing' or 'issued'.")
+        raise ValueError(f"Invalid date type: {date_type}. Expected 'file' or 'publication'.")
 
     # Check if the current year's payment date has already passed
     include_current_year = comparison_month_day > current_month_day
@@ -30,16 +21,7 @@ def check_year_inclusion(date, date_type):
     return include_current_year
 
 def post_process_fees(results_df):
-    """
-    Post-process the calculated fees to check the current year and clear the fee if the payment
-    has already been made for the current year.
 
-    Parameters:
-    - results_df (DataFrame): DataFrame containing the calculated maintenance fees.
-
-    Returns:
-    - processed_df (DataFrame): DataFrame with post-processed fees.
-    """
     today = pd.Timestamp.today().date()
     current_year = today.year
 
@@ -49,7 +31,7 @@ def post_process_fees(results_df):
         date_type = row['Date Type']  # Get the date type from the DataFrame
 
         # Determine the appropriate date based on the date type
-        date_to_check = issued_date if date_type == 'issued date' else filing_date
+        date_to_check = issued_date if date_type == 'publication date' else filing_date
 
         include_current_year = check_year_inclusion(date_to_check, date_type)
         if not include_current_year:
@@ -59,50 +41,35 @@ def post_process_fees(results_df):
 
     return results_df
 
+def date_check(patent, date_types, fees_info, results_df, index):
 
-def calculate_fees_us(patent_info, country_fees):
-    """
-    Calculate the fees for a US patent based on its issued date.
+    patent_number, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent
+    date_type = date_types.get(patent_number, '').lower()
 
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for the US.
+    # Check date type and calculate fees accordingly
+    if date_type == 'publication date':
+        fees_by_year = calculate_fees_issued_date(patent, fees_info)
+    elif date_type == 'file date':
+        fees_by_year = calculate_fees_filing_date(patent, fees_info)
+    else:
+        return results_df  # If no valid date type, return without changes
 
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
-    _, _, _, issued_date, expiration_date, _, _ = patent_info
-    today = datetime.date.today()
-    start_year = max(today.year, issued_date.year)
-    end_year = expiration_date.year
+    # Update the DataFrame with the calculated fees by year
+    for year, fee in fees_by_year:
+        if year >= datetime.date.today().year:
+            results_df.at[index, str(year)] = fee
 
-    fees_by_year = []
+    # Add the date type to the DataFrame
+    results_df.at[index, 'Date Type'] = date_type
 
-    # Adjust for country_fees containing extra metadata rows (skip first 2 entries)
-    country_fees = country_fees[2:]
+    return results_df
 
-    for year in range(start_year, end_year):
-        year_index = year - issued_date.year
-        if year_index < len(country_fees):
-            fee = country_fees[year_index] if not pd.isna(country_fees[year_index]) else 0
-        else:
-            fee = 0
-        fees_by_year.append((year, fee))
 
-    return fees_by_year
+
+######## FOR PATENTS WHICH CALCULATE FROM FILING DATE ########################
 
 def calculate_fees_issued_date(patent_info, fees_info):
-    """
-    Calculate the fees for a patent based on its expiration date and fees data,
-    assuming the date type is 'issued date'.
 
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - fees_info (DataFrame): DataFrame containing fees information.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
     patent_number, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent_info
 
     print(f"Calculating issued date fees for patent {patent_number} in country {country}")
@@ -137,20 +104,32 @@ def calculate_fees_issued_date(patent_info, fees_info):
         return calculate_fees_sk(patent_info, country_fees)
     else:
         raise ValueError(f"Unsupported country code for issued date calculation: {country}")
+    
+def calculate_fees_us(patent_info, country_fees):
 
+    _, _, _, issued_date, expiration_date, _, _ = patent_info
+    today = datetime.date.today()
+    start_year = max(today.year, issued_date.year)
+    end_year = expiration_date.year
+
+    fees_by_year = []
+
+    # Adjust for country_fees containing extra metadata rows (skip first 2 entries)
+    country_fees = country_fees[2:]
+
+    for year in range(start_year, end_year):
+        year_index = year - issued_date.year
+        if year_index < len(country_fees):
+            fee = country_fees[year_index] if not pd.isna(country_fees[year_index]) else 0
+        else:
+            fee = 0
+        fees_by_year.append((year, fee))
+
+    return fees_by_year
+    
 
 def calculate_fees_filing_date(patent_info, fees_info):
-    """
-    Calculate the fees for a patent based on its expiration date and fees data,
-    assuming the date type is 'filing date'.
 
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - fees_info (DataFrame): DataFrame containing fees information.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
     # Unpack the patent information
     patent_number, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent_info
     
@@ -176,19 +155,9 @@ def calculate_fees_filing_date(patent_info, fees_info):
 
     return fees_by_year
 
-
+############# FOR PATENTS CALCULATING FROM PUBLICATION/ISSUED DATE ###################
 def calculate_fees_jp(patent_info, country_fees, fees_per_claim):
-    """
-    Calculate the fees for a JP patent based on its issued date.
 
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for JP.
-    - fees_per_claim (list): List containing fees per claim information for JP.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
     _, _, _, issued_date, expiration_date, country, numofclaims = patent_info
     today = datetime.date.today()
     start_year = max(today.year, issued_date.year)
@@ -221,17 +190,7 @@ def calculate_fees_jp(patent_info, country_fees, fees_per_claim):
     return fees_by_year
 
 def calculate_fees_kr(patent_info, country_fees, fees_per_claim):
-    """
-    Calculate the fees for a JP patent based on its issued date.
 
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for JP.
-    - fees_per_claim (list): List containing fees per claim information for JP.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
     _, _, _, issued_date, expiration_date, country, numofclaims = patent_info
     today = datetime.date.today()
     start_year = max(today.year, issued_date.year)
@@ -264,17 +223,7 @@ def calculate_fees_kr(patent_info, country_fees, fees_per_claim):
     return fees_by_year
 
 def calculate_fees_id(patent_info, country_fees, fees_per_claim):
-    """
-    Calculate the fees for an ID patent based on its issued date.
-
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for ID.
-    - fees_per_claim (list): List containing fees per claim information for ID.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
+   
     _, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent_info
     today = datetime.date.today()
     start_year = max(today.year, issued_date.year + 1)  # Start paying fees one year after grant
@@ -302,16 +251,7 @@ def calculate_fees_id(patent_info, country_fees, fees_per_claim):
     return fees_by_year
 
 def calculate_fees_tw(patent_info, country_fees):
-    """
-    Calculate the fees for a TW patent based on its issued date.
-
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for TW.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
+ 
     _, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent_info
     today = datetime.date.today()
     start_year = max(today.year, issued_date.year)  # Start paying fees from the issued year
@@ -335,16 +275,7 @@ def calculate_fees_tw(patent_info, country_fees):
 
 
 def calculate_fees_ru(patent_info, country_fees):
-    """
-    Calculate the fees for a RU patent based on its issued date.
-
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for RU.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
+   
     _, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent_info
     today = datetime.date.today()
     start_year = max(today.year, issued_date.year)  # Start paying fees from the issued year
@@ -367,16 +298,7 @@ def calculate_fees_ru(patent_info, country_fees):
     return fees_by_year
 
 def calculate_fees_my(patent_info, country_fees):
-    """
-    Calculate the fees for a RU patent based on its issued date.
-
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for RU.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
+   
     _, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent_info
     today = datetime.date.today()
     start_year = max(today.year, issued_date.year)  # Start paying fees from the issued year
@@ -400,17 +322,7 @@ def calculate_fees_my(patent_info, country_fees):
 
 
 def calculate_fees_sk(patent_info, country_fees, fees_per_claim):
-    """
-    Calculate the fees for an ID patent based on its issued date.
-
-    Parameters:
-    - patent_info (tuple): Tuple containing extracted patent information.
-    - country_fees (list): List containing fees information for ID.
-    - fees_per_claim (list): List containing fees per claim information for ID.
-
-    Returns:
-    - fees_by_year (list of tuples): List of tuples containing (year, fee) for each remaining year.
-    """
+ 
     _, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent_info
     today = datetime.date.today()
     start_year = max(today.year, issued_date.year + 1)  # Start paying fees one year after grant
@@ -436,20 +348,3 @@ def calculate_fees_sk(patent_info, country_fees, fees_per_claim):
         fees_by_year.append((year, fee))
 
     return fees_by_year
-
-def date_check(patent_info, date_types, fees_info, results_df):
-    for i, patent in enumerate(patent_info):
-        patent_number = patent[0]
-        date_type = date_types.get(patent_number, '').lower()
-        if date_type == 'issued date':
-            fees_by_year = calculate_fees_issued_date(patent, fees_info)
-        elif date_type == 'filing date':
-            fees_by_year = calculate_fees_filing_date(patent, fees_info)
-        else:
-            continue
-        for year, fee in fees_by_year:
-            if year >= datetime.date.today().year:
-                results_df.at[i, str(year)] = fee
-        results_df.at[i, 'Date Type'] = date_type
-
-    return results_df

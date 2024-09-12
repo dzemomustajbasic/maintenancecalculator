@@ -48,13 +48,13 @@ def extract_patent_info(patent_df):
     # Loop through each row in the DataFrame
     for index, row in patent_df.iterrows():
         # Extract relevant information
-        patent_number = row['Patent/ Publication Number']
-        country = row['Publication Country']
-        priority_date = row['Priority Date'].date()
-        filing_date = row['File Date'].date()
-        issued_date = row['Publication Date'].date()
-        expiration_date = row['Est. Expiration Date'].date()
-        numofclaims = row['Number of claims']
+        patent_number = row['Patent/ Publication Number']  # Change from 'Patent / Publication Number'
+        country = row['Publication Country']  # Change from 'Country Code'
+        priority_date = row['Priority Date']
+        filing_date = row['File Date']  # Change from 'Filing Date'
+        issued_date = row['Publication Date']  # Change from 'Issued Date'
+        expiration_date = row['Est. Expiration Date']  # Change from 'Expiration Date'
+        numofclaims = row['Number of claims']  # Change from 'Number of Claims'
 
         # Append the extracted information as a tuple to the patent_info list
         patent_info.append((patent_number, priority_date, filing_date, issued_date, expiration_date, country, numofclaims))

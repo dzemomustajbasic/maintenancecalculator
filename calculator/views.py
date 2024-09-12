@@ -97,7 +97,6 @@ def calculate_fees_view(request):
             patent_info = extract_patent_info(patent_df)
             fees_info_path = os.path.join(settings.BASE_DIR, 'calculator', 'data', 'feesdollars.xlsx')
             fees_info = read_fees_data(fees_info_path)
-            print("Fees_info:", fees_info)
 
             # Create a unique file name for the results with the project ID
             output_filename = f"TIPA_MC_{project_id}_{original_filename}.xlsx"
@@ -106,16 +105,17 @@ def calculate_fees_view(request):
             # Perform the fee calculation logic
             results_df = patent_df.copy()
             date_types = locate_country_code_in_fees(patent_info, fees_info)
-            results_df['Date Type'] = 'issued date' # Need to fix
-            print("EVO DATE TAJPOVA", date_types)
+            results_df['Date Type'] = None
 
-            
-            # Checking date type and writing it into the Date Type column
-            results_df = date_check(patent_info, date_types, fees_info, results_df)
+            # Call the date_check function for each patent
+            for i, patent in enumerate(patent_info):
+                results_df = date_check(patent, date_types, fees_info, results_df, i)
 
             results_df = post_process_fees(results_df)
             results_df = add_total_fees_per_patent(results_df)
             results_df = calculate_grand_total(results_df)
+
+            results_df = results_df.drop(columns=['Date Type'])
 
             # Save the results to an Excel file
             results_df.to_excel(output_file_path, index=False)
@@ -135,7 +135,7 @@ def calculate_fees_view(request):
         form = UploadFileForm()
 
     # Fetch stored results to display on the calculation page
-    result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator' )).order_by('-created_at')
+    result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')).order_by('-created_at')
     
     context = {
         'form': form,
@@ -143,6 +143,7 @@ def calculate_fees_view(request):
     }
     
     return render(request, 'calculator/calculate.html', context)
+
 
 def handle_uploaded_file(f):
     df = pd.read_excel(f)
