@@ -221,14 +221,8 @@ def gpt_categorize_view(request):
             # Process the Excel file
             df = clean_and_extract_relevant_columns(file_path)
 
-            # Convert DataFrame to list of inputs
-            inputs = df['text_column'].tolist()  # Pretpostavljamo da je 'text_column' naziv kolone sa tekstom
-
             # Categorize claims using the GPT model
-            responses = handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1)
-
-            # Add responses to DataFrame
-            df['category'] = responses
+            categorized_df = categorize_claims(df, model, prompt)
 
             # Ensure the output directory exists (Custom Directory for GPT outputs)
             output_dir = os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')
@@ -240,14 +234,14 @@ def gpt_categorize_view(request):
             output_filename = f"{prefix}_{project_id:04d}_{filename}"
             output_file_path = os.path.join(output_dir, output_filename)
             print(f"Output file path: {output_file_path}")  # Debugging line
-            save_to_excel(df, output_file_path)  # Update to save the DataFrame with responses
+            save_to_excel(categorized_df, output_file_path)
 
             # Store the result in the database
             GptResult.objects.create(
                 filename=output_filename,
                 file_path=output_file_path,
                 prompt=prompt,
-                model_used=model,  # Assuming you have a field for storing the model used
+                model_used=model, # Assuming you have a field for storing the model used
                 created_by=request.user  # Assign the currently logged-in user
             )
 
@@ -263,7 +257,7 @@ def gpt_categorize_view(request):
                 file.write(f"Project: {prefix}_{project_id:04d}\nCreated by: {request.user.username}\nPrompt: {prompt}\nModel: {model}\nCreated at: {datetime.datetime.now()}\n\n")
 
             # Redirect after processing
-            return redirect('gpt_categorize')
+            return redirect('gpt-categorize')
     else:
         form = GPTForm()
 
@@ -275,6 +269,7 @@ def gpt_categorize_view(request):
     }
     
     return render(request, 'calculator/gpt.html', context)
+
 
 def gpt_craft_view(request):
     return render(request, 'calculator/home.html')

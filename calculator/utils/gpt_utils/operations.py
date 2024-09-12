@@ -23,11 +23,27 @@ def load_config():
         return json.load(file)
 
 # Funkcija za pozivanje GPT modela
-def call_gpt_model(model, prompt, input_text, response_list, index, api_key):
+def call_gpt_model(model, prompt, input_text):
+    """
+    Call the GPT model to categorize the input text based on the given prompt.
     
-    try:
-        client = OpenAI(api_key=api_key)
+    Parameters:
+    - model: The GPT model to use (e.g., 'gpt-4o-mini').
+    - prompt: The prompt used for the categorization.
+    - input_text: The text to be analyzed and categorized.
+    
+    Returns:
+    - The category name or an error message.
+    """
+    config = load_config()
+    api_key = config.get('OPENAI_API_KEY')
 
+    if not api_key:
+        raise ValueError("API key is not set in the configuration file.")
+
+    client = OpenAI(api_key=api_key)
+
+    try:
         chat_completion = client.chat.completions.create(
             model=model,
             messages=[
@@ -41,10 +57,10 @@ def call_gpt_model(model, prompt, input_text, response_list, index, api_key):
                 }
             ]
         )
-
-        response_list[index] = chat_completion.choices[0].message.content.strip()
+      
+        return chat_completion.choices[0].message.content.strip()
     except Exception as e:
-        response_list[index] = f"API request failed: {str(e)}"
+        return f"API request failed: {str(e)}"
 
 # Funkcija za procesiranje više zahteva sa rate limiting-om
 def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
@@ -77,21 +93,20 @@ def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
 
     
 def clean_and_extract_relevant_columns(excel_file_path):
-   
+    """
+    Load an Excel file and retain only the 'Patent / Publication Number', 'Title', and 'First Claim' columns.
+    """
     try:
         # Read the Excel file
         df = pd.read_excel(excel_file_path)
         
         # Check if required columns exist
-        required_columns = ['Patent / Publication Number', 'Title', 'First Claim']
+        required_columns = ['Patent / Publication Number', 'Claim/Title']
         if not all(col in df.columns for col in required_columns):
             raise ValueError(f"Excel file must contain the following columns: {', '.join(required_columns)}")
 
-        # Combine columns into a single 'text_column'
-        df['text_column'] = df[required_columns].astype(str).agg(' '.join, axis=1)
-
-        # Keep only the 'text_column'
-        df = df[['text_column']]
+        # Retain only the relevant columns
+        df = df[required_columns]
 
         return df
     except FileNotFoundError:
@@ -105,13 +120,13 @@ def categorize_claims(df, model, prompt):
 
     for _, row in df.iterrows():
         try:
-            gpt_category = call_gpt_model(model, prompt, row['First Claim'])
+            gpt_category = call_gpt_model(model, prompt, row['Claim/Title'])
             gpt_categories.append(gpt_category)
         except Exception as e:
             gpt_categories.append(f"Error categorizing: {str(e)}")
 
     df['GPT Category'] = gpt_categories
-    df = df[['Patent / Publication Number', 'First Claim', 'GPT Category']]
+    df = df[['Patent / Publication Number', 'Claim/Title', 'GPT Category']]
 
     return df
 
