@@ -11,13 +11,13 @@
             <h3>Instructions for Uploading Files</h3>
             <p>Please make sure your Excel file contains the following columns:</p>
             <ul>
-                <li><strong>Patent / Publication Number:</strong> The unique identifier for the patent.</li>
-                <li><strong>Country Code:</strong> The two-letter country code where the patent was filed.</li>
-                <li><strong>Priority Date:</strong> The earliest date of filing.</li>
-                <li><strong>Filing Date:</strong> The date when the patent was filed.</li>
-                <li><strong>Issued Date:</strong> The date when the patent was granted.</li>
-                <li><strong>Expiration Date:</strong> The date when the patent expires.</li>
-                <li><strong>Number of Claims:</strong> The number of claims made in the patent.</li>
+                <li><strong>Patent/ Publication Number</strong></li>
+                <li><strong>Publication Country</strong></li>
+                <li><strong>Priority Date</strong></li>
+                <li><strong>File Date</strong></li>
+                <li><strong>Publication Date</strong></li>
+                <li><strong>Est. Expiration Date</strong></li>
+                <li><strong>Number of claims</strong></li>
             </ul>
             <p>The file must be in .xlsx format and should not contain any empty rows or irrelevant data.</p>
         </div>
@@ -42,11 +42,40 @@
 
     <!-- Right: Fees Dollars Section -->
     <div class="calc-fees-container">
-        <h2 class="fees-heading">Fees Dollars</h2>
+        <h2 class="fees-heading">Available countries and their codes:</h2>
+
+        <div class="dropdown-menus">
+            <div class="dropdown-container">
+                <label for="publication-date" class="dropdown-label">Publication Date:</label>
+                <br></br>
+                <input type="text" id="publication-date-search" class="dropdown-search" placeholder="Search for a country">
+                <select id="publication-date" class="dropdown-menu" size="4">
+                    {% for code, data in country_codes_and_names.items %}
+                        {% if data.type == 'Publication Date' %}
+                            <option value="{{ code }}">{{ code }}: {{ data.country }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
         
+            <div class="dropdown-container">
+                <label for="filling-date" class="dropdown-label">File Date:</label>
+                <br></br>
+                <input type="text" id="filling-date-search" class="dropdown-search" placeholder="Search for a country">
+                <select id="filling-date" class="dropdown-menu" size="4">
+                    {% for code, data in country_codes_and_names.items %}
+                        {% if data.type == 'File Date' %}
+                            <option value="{{ code }}">{{ code }}: {{ data.country }}</option>
+                        {% endif %}
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        
+
         <div class="fees-button-container">
             <!-- Download Button -->
-            <a href="{% url 'download_fees' %}" class="btn fees-download-btn">Download FeesDollars.xlsx</a>
+            <a href="{% url 'download_fees' %}" class="btn fees-download-btn" style="max-width: 90%;">Download FeesDollars.xlsx</a>
         </div>
 
         <!-- Upload Form -->
@@ -54,7 +83,6 @@
             {% csrf_token %}
             <label class="fees-custom-file-upload">
                 <input type="file" name="fees_file" accept=".xlsx" required>
-                Choose File
             </label>
             <button type="submit" class="btn fees-upload-btn">Upload Updated File</button>
         </form>
@@ -87,4 +115,38 @@
         <button type="submit" class="calc-btn">Download Selected Files</button>
     </form>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const publicationDateSearch = document.getElementById('publication-date-search');
+    const fillingDateSearch = document.getElementById('filling-date-search');
+
+    function filterOptions(input, selectId) {
+        const filter = input.value.toLowerCase();
+        const select = document.getElementById(selectId);
+        const options = select.options;
+
+        for (let i = 0; i < options.length; i++) {
+            const text = options[i].textContent || options[i].innerText;
+            if (text.toLowerCase().includes(filter)) {
+                options[i].style.display = '';
+            } else {
+                options[i].style.display = 'none';
+            }
+        }
+    }
+
+    if (publicationDateSearch) {
+        publicationDateSearch.addEventListener('input', () => {
+            filterOptions(publicationDateSearch, 'publication-date');
+        });
+    }
+
+    if (fillingDateSearch) {
+        fillingDateSearch.addEventListener('input', () => {
+            filterOptions(fillingDateSearch, 'filling-date');
+        });
+    }
+});
+</script>
 {% endblock %}

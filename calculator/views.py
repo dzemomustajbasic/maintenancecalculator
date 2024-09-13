@@ -72,6 +72,21 @@ def upload_fees(request):
 
 ############################################ CALCULATION VIEW ############################################
 @login_required  # Ensure the user is logged in before accessing this view
+def locate_country_codes_and_names(request):
+
+    fees_info_path = os.path.join(settings.BASE_DIR, 'calculator', 'data', 'feesdollars.xlsx')
+    fees_info = read_fees_data(fees_info_path)
+    country_codes_and_names = {}
+
+    for column in fees_info.columns:
+        country_codes_and_names[column] = {
+            'country' : fees_info.iloc[1][column], 
+            'type' : fees_info.iloc[0][column]
+        }
+        
+    print(country_codes_and_names)    
+    return country_codes_and_names
+
 def calculate_fees_view(request):
     if request.method == "POST":
         form = UploadFileForm(request.POST, request.FILES)
@@ -136,10 +151,11 @@ def calculate_fees_view(request):
 
     # Fetch stored results to display on the calculation page
     result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')).order_by('-created_at')
-    
+    country_codes_and_names = locate_country_codes_and_names(request)
     context = {
         'form': form,
         'result_files_calculation': result_files_calculation,
+        'country_codes_and_names' : country_codes_and_names
     }
     
     return render(request, 'calculator/calculate.html', context)
@@ -269,10 +285,6 @@ def gpt_categorize_view(request):
     }
     
     return render(request, 'calculator/gpt.html', context)
-
-
-def gpt_craft_view(request):
-    return render(request, 'calculator/home.html')
 
 def get_progress(request):
     total_rows = request.session.get('total_rows', 1)

@@ -3,20 +3,14 @@
 <html>
 <head>
     <title>{% block title %}TIPA{% endblock %}</title>
-    <link rel="stylesheet" type="text/css" href="{% static 'calculator/styles1.css' %}">
+    <link rel="stylesheet" type="text/css" href="{% static 'calculator/styles.css' %}">
 </head>
 <body>
     <div class="navbar">
         <div class="nav-left">
             <a href="{% url 'home' %}" class="nav-link">Home</a>
             <a href="{% url 'calculate_fees' %}" class="nav-link">Maintenance Calculator</a>
-            <div class="dropdown">
-                <a href="#" onclick="toggleDropdown('gptDropdown'); return false;" class="nav-link">GPT</a>
-                <div id="gptDropdown" class="dropdown-content">
-                    <a href="{% url 'gpt-categorize' %}">GPT Categorize</a>
-                    <a href="{% url 'gpt_craft' %}">GPT Craft</a>
-                </div>
-            </div>
+            <a href="{% url 'gpt-categorize' %}" class="nav-link">GPT Categorize</a>
             <a href="{% url 'view_fees_dollars' %}" class="nav-link">Fees Dollars</a>
         </div>
         <div class="nav-right">

@@ -1,3 +1,6 @@
+import os
+from django.conf import settings
+
 def locate_country_code_in_fees(patent_info, fees_info):
     """
     Locate the country codes in the fees information DataFrame and display the corresponding values.
@@ -32,4 +35,3 @@ def locate_country_code_in_fees(patent_info, fees_info):
             print(f"Country code {country} not found in fees data.")
 
     return date_types
-
