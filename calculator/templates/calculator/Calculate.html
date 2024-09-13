@@ -22,6 +22,7 @@
             <p>The file must be in .xlsx format and should not contain any empty rows or irrelevant data.</p>
         </div>
 
+        <!-- File Upload Form -->
         <form method="post" enctype="multipart/form-data" class="calc-form">
             {% csrf_token %}
             <div class="calc-form-group">
@@ -34,6 +35,13 @@
 
             <button type="submit" class="calc-btn">Submit</button>
         </form>
+
+        <!-- Error Message Section at the Bottom -->
+        {% if error_message %}
+        <div class="alert alert-danger" style="color: red; font-weight: bold; margin-top: 20px;">
+            <strong>Error:</strong> {{ error_message }}
+        </div>
+        {% endif %}
 
         {% if download_url %}
             <a href="{{ download_url }}" class="calc-btn calc-btn-success">Download File</a>

@@ -1,20 +1,20 @@
 import pandas as pd
+import logging
 
 def read_fees_data(file_path):
     """
     Read the fees data from the Excel file and return it as a Pandas DataFrame.
-
-    Parameters:
-    - file_path (str): The file path of the Excel file containing the fees data.
-
-    Returns:
-    - fees_df (DataFrame): The fees data as a Pandas DataFrame.
     """
-    # Read the Excel file and specify data types if needed
-    fees_df = pd.read_excel(file_path)
-    
-    # Print the first few rows of the DataFrame to verify data loading
-    #print(fees_df)
-    
-    # Return the DataFrame
+    try:
+        fees_df = pd.read_excel(file_path)
+    except FileNotFoundError:
+        logging.error(f"File not found: {file_path}")
+        raise
+    except Exception as e:
+        logging.error(f"Error reading Excel file {file_path}: {e}")
+        raise
+
+    if fees_df.empty:
+        logging.warning(f"Fees data is empty in {file_path}")
+
     return fees_df

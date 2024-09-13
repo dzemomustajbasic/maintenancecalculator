@@ -1,21 +1,20 @@
 import pandas as pd
+import logging
 
 def read_patent_data(file_path):
     """
     Read the patent information from the Excel file and return two DataFrames: 
     one with the full data and another with the processed necessary columns.
-
-    Parameters:
-    - file_path (str): The file path of the Excel file containing the patent information.
-
-    Returns:
-    - full_df (DataFrame): The full patent information as a Pandas DataFrame.
-    - processed_df (DataFrame): The processed DataFrame with necessary columns.
     """
-    # Read the full Excel file
-    full_df = pd.read_excel(file_path)
-    
-    # Specify the necessary columns for calculations
+    try:
+        full_df = pd.read_excel(file_path)
+    except FileNotFoundError:
+        logging.error(f"File not found: {file_path}")
+        raise
+    except Exception as e:
+        logging.error(f"Error reading Excel file {file_path}: {e}")
+        raise
+
     necessary_columns = [
         'Patent/ Publication Number', 
         'Publication Country', 
@@ -25,11 +24,15 @@ def read_patent_data(file_path):
         'Est. Expiration Date', 
         'Number of claims'
     ]
-    
-    # Filter the DataFrame to keep only the necessary columns
-    processed_df = full_df[necessary_columns].copy()
 
+     # Check if necessary columns are present
+    missing_columns = [col for col in necessary_columns if col not in full_df.columns]
+    if missing_columns:
+        raise ValueError(f"Missing required columns: {', '.join(missing_columns)}")
+
+    processed_df = full_df[necessary_columns].copy()
     return full_df, processed_df
+
 
 def extract_patent_info(patent_df):
     """
