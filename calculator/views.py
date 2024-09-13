@@ -77,6 +77,23 @@ def calculate_fees_view(request):
         form = UploadFileForm(request.POST, request.FILES)
         if form.is_valid():
             file = form.cleaned_data["file"]
+
+            # Attempt to process the file
+            try:
+                # Read patent data and validate columns
+                full_patent_df, patent_df = read_patent_data(file)
+
+            except ValueError as e:
+                # If a ValueError is raised due to missing columns, fetch the results and return an error message
+                result_files_calculation = CalculationResult.objects.filter(
+                    file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')
+                ).order_by('-created_at')
+                
+                return render(request, 'calculator/calculate.html', {
+                    'form': form,
+                    'error_message': str(e),  # Pass the error message to the template
+                    'result_files_calculation': result_files_calculation  # Ensure file list is still displayed
+                })
             
             # Determine the next project ID
             project_id = CalculationResult.objects.count() + 1
