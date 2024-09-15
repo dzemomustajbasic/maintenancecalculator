@@ -1,5 +1,6 @@
 import pandas as pd
 import logging
+from .exceptions import ExcelFileReadError
 
 def read_fees_data(file_path):
     """
@@ -9,10 +10,10 @@ def read_fees_data(file_path):
         fees_df = pd.read_excel(file_path)
     except FileNotFoundError:
         logging.error(f"File not found: {file_path}")
-        raise
+        raise ExcelFileReadError(f"File not found: {file_path}")
     except Exception as e:
         logging.error(f"Error reading Excel file {file_path}: {e}")
-        raise
+        raise ExcelFileReadError(str(e))
 
     if fees_df.empty:
         logging.warning(f"Fees data is empty in {file_path}")

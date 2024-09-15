@@ -1,16 +1,10 @@
 import os
 from django.conf import settings
+from .exceptions import InvalidCountryCodeError
 
 def locate_country_code_in_fees(patent_info, fees_info):
     """
     Locate the country codes in the fees information DataFrame and display the corresponding values.
-
-    Parameters:
-    - patent_info (list of tuples): List of tuples containing extracted patent information.
-    - fees_info (DataFrame): DataFrame containing fees information.
-
-    Returns:
-    - date_types (dict): Dictionary with patent numbers as keys and date types as values.
     """
     date_types = {}
 
@@ -32,6 +26,7 @@ def locate_country_code_in_fees(patent_info, fees_info):
             print(fees_data)
             print()  # Add a blank line for clarity
         else:
-            print(f"Country code {country} not found in fees data.")
+            # Raise custom exception if the country code is missing
+            raise InvalidCountryCodeError(country)
 
     return date_types

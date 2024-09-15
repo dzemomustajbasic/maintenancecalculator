@@ -35,8 +35,7 @@
 
             <button type="submit" class="calc-btn">Submit</button>
         </form>
-
-        <!-- Error Message Section at the Bottom -->
+        <!-- Existing error message section -->
         {% if error_message %}
         <div class="alert alert-danger" style="color: red; font-weight: bold; margin-top: 20px;">
             <strong>Error:</strong> {{ error_message }}
@@ -52,34 +51,14 @@
     <div class="calc-fees-container">
         <h2 class="fees-heading">Available countries and their codes:</h2>
 
-        <div class="dropdown-menus">
-            <div class="dropdown-container">
-                <label for="publication-date" class="dropdown-label">Publication Date:</label>
-                <br></br>
-                <input type="text" id="publication-date-search" class="dropdown-search" placeholder="Search for a country">
-                <select id="publication-date" class="dropdown-menu" size="4">
-                    {% for code, data in country_codes_and_names.items %}
-                        {% if data.type == 'Publication Date' %}
-                            <option value="{{ code }}">{{ code }}: {{ data.country }}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-            </div>
-        
-            <div class="dropdown-container">
-                <label for="filling-date" class="dropdown-label">File Date:</label>
-                <br></br>
-                <input type="text" id="filling-date-search" class="dropdown-search" placeholder="Search for a country">
-                <select id="filling-date" class="dropdown-menu" size="4">
-                    {% for code, data in country_codes_and_names.items %}
-                        {% if data.type == 'File Date' %}
-                            <option value="{{ code }}">{{ code }}: {{ data.country }}</option>
-                        {% endif %}
-                    {% endfor %}
-                </select>
-            </div>
+        <div class="dropdown-container">
+            <input type="text" id="country-search" class="dropdown-search" placeholder="Search for a country">
+            <select id="country-list" class="dropdown-menu" size="10">
+                {% for code, data in country_codes_and_names.items %}
+                    <option value="{{ code }}">{{ code }}: {{ data.country }} ({{ data.type }})</option>
+                {% endfor %}
+            </select>
         </div>
-        
 
         <div class="fees-button-container">
             <!-- Download Button -->
@@ -126,12 +105,11 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const publicationDateSearch = document.getElementById('publication-date-search');
-    const fillingDateSearch = document.getElementById('filling-date-search');
+    const countrySearch = document.getElementById('country-search');
 
-    function filterOptions(input, selectId) {
-        const filter = input.value.toLowerCase();
-        const select = document.getElementById(selectId);
+    function filterOptions() {
+        const filter = countrySearch.value.toLowerCase();
+        const select = document.getElementById('country-list');
         const options = select.options;
 
         for (let i = 0; i < options.length; i++) {
@@ -144,17 +122,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    if (publicationDateSearch) {
-        publicationDateSearch.addEventListener('input', () => {
-            filterOptions(publicationDateSearch, 'publication-date');
-        });
-    }
-
-    if (fillingDateSearch) {
-        fillingDateSearch.addEventListener('input', () => {
-            filterOptions(fillingDateSearch, 'filling-date');
-        });
-    }
+    countrySearch.addEventListener('input', filterOptions);
 });
 </script>
 {% endblock %}

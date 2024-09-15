@@ -22,6 +22,8 @@ from .utils.total import add_total_fees_per_patent, calculate_grand_total
 from .utils.overview import create_overview_sheet, format_dates_and_currency
 from .utils.locate import locate_country_code_in_fees
 from .utils.gpt_utils.operations import clean_and_extract_relevant_columns, categorize_claims, save_to_excel, handle_multiple_requests
+from .utils.exceptions import MissingRequiredColumnsError, InvalidCountryCodeError, ExcelFileReadError, ExcelError
+from .utils.gpt_utils.exceptions import GPTInvalidColumnsError
 
 ###################################### LOGIN/LOGOUT #########################################
 
@@ -73,18 +75,17 @@ def upload_fees(request):
 ############################################ CALCULATION VIEW ############################################
 @login_required  # Ensure the user is logged in before accessing this view
 def locate_country_codes_and_names(request):
-
     fees_info_path = os.path.join(settings.BASE_DIR, 'calculator', 'data', 'feesdollars.xlsx')
     fees_info = read_fees_data(fees_info_path)
     country_codes_and_names = {}
 
     for column in fees_info.columns:
-        country_codes_and_names[column] = {
-            'country' : fees_info.iloc[1][column], 
-            'type' : fees_info.iloc[0][column]
-        }
-        
-    print(country_codes_and_names)    
+        if fees_info.iloc[0][column].strip() in ['Publication Date', 'File Date']:  # Filter out other types if necessary
+            country_codes_and_names[column] = {
+                'country': fees_info.iloc[1][column],
+                'type': fees_info.iloc[0][column]
+            }
+
     return country_codes_and_names
 
 def calculate_fees_view(request):
@@ -93,91 +94,95 @@ def calculate_fees_view(request):
         if form.is_valid():
             file = form.cleaned_data["file"]
 
-            # Attempt to process the file
             try:
                 # Read patent data and validate columns
                 full_patent_df, patent_df = read_patent_data(file)
 
-            except ValueError as e:
-                # If a ValueError is raised due to missing columns, fetch the results and return an error message
-                result_files_calculation = CalculationResult.objects.filter(
-                    file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')
-                ).order_by('-created_at')
+                # Extract patent info
+                patent_info = extract_patent_info(patent_df)
                 
-                return render(request, 'calculator/calculate.html', {
-                    'form': form,
-                    'error_message': str(e),  # Pass the error message to the template
-                    'result_files_calculation': result_files_calculation  # Ensure file list is still displayed
-                })
-            
-            # Determine the next project ID
-            project_id = CalculationResult.objects.count() + 1
-            
-            # Extract the original filename without extension
-            original_filename = os.path.splitext(file.name)[0]
-            
-            # Generate the new filename with TIPA_MC prefix
-            new_filename = f"TIPA_MC_{project_id}_{original_filename}.xlsx"
-            
-            # Save the uploaded file
-            fs = FileSystemStorage()
-            filename = fs.save(new_filename, file)
-            file_path = fs.path(filename)
+                # Read fees data
+                fees_info_path = os.path.join(settings.BASE_DIR, 'calculator', 'data', 'feesdollars.xlsx')
+                fees_info = read_fees_data(fees_info_path)
 
-            # Process the uploaded Excel file
-            full_patent_df, patent_df = read_patent_data(file_path)
-            patent_info = extract_patent_info(patent_df)
-            fees_info_path = os.path.join(settings.BASE_DIR, 'calculator', 'data', 'feesdollars.xlsx')
-            fees_info = read_fees_data(fees_info_path)
+                # Locate country code in fees and calculate fees
+                date_types = locate_country_code_in_fees(patent_info, fees_info)
 
-            # Create a unique file name for the results with the project ID
-            output_filename = f"TIPA_MC_{project_id}_{original_filename}.xlsx"
-            output_file_path = os.path.join(settings.BASE_DIR, 'database', 'calculator', output_filename)
+                # Proceed with the rest of the logic...
+                project_id = CalculationResult.objects.count() + 1
+                original_filename = os.path.splitext(file.name)[0]
+                new_filename = f"TIPA_MC_{project_id}_{original_filename}.xlsx"
+                
+                fs = FileSystemStorage()
+                filename = fs.save(new_filename, file)
+                file_path = fs.path(filename)
 
-            # Perform the fee calculation logic
-            results_df = patent_df.copy()
-            date_types = locate_country_code_in_fees(patent_info, fees_info)
-            results_df['Date Type'] = None
+                full_patent_df, patent_df = read_patent_data(file_path)
+                patent_info = extract_patent_info(patent_df)
 
-            # Call the date_check function for each patent
-            for i, patent in enumerate(patent_info):
-                results_df = date_check(patent, date_types, fees_info, results_df, i)
+                output_filename = f"TIPA_MC_{project_id}_{original_filename}.xlsx"
+                output_file_path = os.path.join(settings.BASE_DIR, 'database', 'calculator', output_filename)
 
-            results_df = post_process_fees(results_df)
-            results_df = add_total_fees_per_patent(results_df)
-            results_df = calculate_grand_total(results_df)
+                results_df = patent_df.copy()
+                results_df['Date Type'] = None
 
-            results_df = results_df.drop(columns=['Date Type'])
+                for i, patent in enumerate(patent_info):
+                    results_df = date_check(patent, date_types, fees_info, results_df, i)
 
-            # Save the results to an Excel file
-            results_df.to_excel(output_file_path, index=False)
-            create_overview_sheet(output_file_path)
-            format_dates_and_currency(output_file_path)
+                results_df = post_process_fees(results_df)
+                results_df = add_total_fees_per_patent(results_df)
+                results_df = calculate_grand_total(results_df)
+                results_df = results_df.drop(columns=['Date Type'])
 
-            # Store the result in the database
-            CalculationResult.objects.create(
-                filename=output_filename,
-                file_path=output_file_path,
-                created_by=request.user
-            )
+                results_df.to_excel(output_file_path, index=False)
+                create_overview_sheet(output_file_path)
+                format_dates_and_currency(output_file_path)
 
-            # Redirect to the results page after processing
-            return redirect('calculate_fees')
+                CalculationResult.objects.create(
+                    filename=output_filename,
+                    file_path=output_file_path,
+                    created_by=request.user
+                )
+
+                return redirect('calculate_fees')
+
+            # Handle missing columns specifically
+            except MissingRequiredColumnsError as e:
+                return render_error_page(request, form, str(e))
+
+            # Handle any Excel-related errors
+            except ExcelError as e:
+                return render_error_page(request, form, str(e))
+
+            # Handle any other unexpected errors
+            except Exception as e:
+                return render_error_page(request, form, "An unexpected error occurred. Please try again later.")
+
     else:
         form = UploadFileForm()
 
-    # Fetch stored results to display on the calculation page
     result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')).order_by('-created_at')
+
     country_codes_and_names = locate_country_codes_and_names(request)
+
     context = {
         'form': form,
         'result_files_calculation': result_files_calculation,
-        'country_codes_and_names' : country_codes_and_names
+        'country_codes_and_names': country_codes_and_names
     }
-    
+
     return render(request, 'calculator/calculate.html', context)
 
+def render_error_page(request, form, error_message):
+    result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')).order_by('-created_at')
 
+    return render(request, 'calculator/calculate.html', {
+        'form': form,
+        'error_message': error_message,
+        'result_files_calculation': result_files_calculation
+    })
+
+#result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')).order_by('-created_at')
 def handle_uploaded_file(f):
     df = pd.read_excel(f)
     df['Total'] = df.sum(axis=1)
@@ -254,14 +259,10 @@ def gpt_categorize_view(request):
                 # Process the Excel file
                 df = clean_and_extract_relevant_columns(file_path)
 
-                # Total number of rows in the Excel file (to use for request counting)
-                total_rows = len(df)
-                print(f"Total number of rows: {total_rows}")
-
                 # Categorize claims using the GPT model
                 categorized_df = categorize_claims(df, model, prompt)
 
-                # Ensure the output directory exists (Custom Directory for GPT outputs)
+                # Ensure the output directory exists
                 output_dir = os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')
                 os.makedirs(output_dir, exist_ok=True)
 
@@ -282,24 +283,23 @@ def gpt_categorize_view(request):
                     created_by=request.user
                 )
 
-                # Redirect after processing
                 return redirect('gpt-categorize')
 
-            except ValueError as e:
-
+            except GPTInvalidColumnsError as e:
+                # Handle incorrect column naming error
                 result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')).order_by('-created_at')
-                # Handle column validation error and display the message on the page
                 return render(request, 'calculator/gpt.html', {
                     'form': form,
-                    'error_message': str(e)  # Pass the error message to the template
+                    'error_message': str(e),  # Display the custom exception message
+                    'result_files_gpt': result_files_gpt
                 })
 
             except Exception as e:
                 result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')).order_by('-created_at')
-                # Handle general errors and display the message on the page
                 return render(request, 'calculator/gpt.html', {
                     'form': form,
-                    'error_message': f"Failed to process the Excel file: {str(e)}"  # General error message
+                    'error_message': f"Failed to process the Excel file: {str(e)}",
+                    'result_files_gpt': result_files_gpt
                 })
 
     else:
@@ -315,5 +315,5 @@ def gpt_categorize_view(request):
     return render(request, 'calculator/gpt.html', context)
 
 
-
+#result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')).order_by('-created_at')
 

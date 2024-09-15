@@ -4,6 +4,7 @@ import time
 import pandas as pd
 from openai import OpenAI
 import threading
+from .exceptions import GPTInvalidColumnsError 
 
 # Učitavanje konfiguracije
 def load_config():
@@ -81,15 +82,15 @@ def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
 
     
 def clean_and_extract_relevant_columns(excel_file_path):
-  
     try:
-        # Read the Excel file
         df = pd.read_excel(excel_file_path)
         
         # Check if required columns exist
         required_columns = ['Patent/ Publication Number', 'First Claim', 'GPT Category']
-        if not all(col in df.columns for col in required_columns):
-            raise ValueError(f"Excel file must contain the following columns: {', '.join(required_columns)}")
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            raise GPTInvalidColumnsError(missing_columns, required_columns)
 
         # Retain only the relevant columns
         df = df[required_columns]
@@ -97,6 +98,8 @@ def clean_and_extract_relevant_columns(excel_file_path):
         return df
     except FileNotFoundError:
         raise FileNotFoundError(f"The specified Excel file was not found: {excel_file_path}")
+    except GPTInvalidColumnsError as e:
+        raise e  # Rethrow the custom exception
     except Exception as e:
         raise Exception(f"Failed to process the Excel file: {str(e)}")
 
