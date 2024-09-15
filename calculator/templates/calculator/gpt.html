@@ -12,7 +12,6 @@
             <div id="tipa-dropdown" class="dropdown-content">
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPA Prompt 1')">TIPA Prompt 1</a>
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPA Prompt 2')">TIPA Prompt 2</a>
-                <!-- Add more TIPA prompts here -->
             </div>
         </div>
 
@@ -22,7 +21,6 @@
             <div id="tipx-dropdown" class="dropdown-content">
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPX Prompt 1')">TIPX Prompt 1</a>
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPX Prompt 2')">TIPX Prompt 2</a>
-                <!-- Add more TIPX prompts here -->
             </div>
         </div>
     </div>
@@ -60,13 +58,22 @@
             <button type="submit" class="btn">Submit</button>
         </form>
 
-
+        <!-- Error Message Display -->
+        {% if error_message %}
+            <div class="alert alert-danger" style="margin-top: 20px; color: red; font-weight: bold;">
+                {{ error_message }}
+            </div>
+        {% endif %}
     </div>
+
     <!-- Right Side: Loading Section -->
     <div class="gpt-loading">
         <h3>Loading...</h3>
         <p>Please wait while the GPT process is running.</p>
     </div>
+
+    
+
 </div>
 
 <div class="gpt-spacer"></div>
@@ -97,20 +104,7 @@
         <button type="submit" class="btn">Download Selected Files</button>
     </form>
 </div>
-<script>
-    function toggleDropdown(id) {
-        var dropdown = document.getElementById(id);
-        dropdown.classList.toggle('show');
-    }
 
-    function insertPrompt(promptText) {
-        var promptField = document.getElementById('id_prompt'); // Ensure this matches the actual ID
-        if (promptField) {
-            promptField.value = promptText;
-        } else {
-            console.error('Prompt field not found.');
-        }
-    }
-</script>
+
 
 {% endblock %}

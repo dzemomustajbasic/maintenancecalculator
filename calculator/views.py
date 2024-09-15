@@ -235,7 +235,7 @@ def bulk_download(request):
 
 
 ############################################  GPT VIEWS ############################################
-@login_required  # Ensure the user is logged in before accessing this view
+@login_required
 def gpt_categorize_view(request):
     if request.method == 'POST':
         form = GPTForm(request.POST, request.FILES)
@@ -245,57 +245,68 @@ def gpt_categorize_view(request):
             model = form.cleaned_data['model']
             prefix = request.POST.get('prefix', 'TIPA')  # Default to TIPA if not selected
 
-            # Save the uploaded file
-            fs = FileSystemStorage()
-            filename = fs.save(file.name, file)
-            file_path = fs.path(filename)
-            print(f"Uploaded file saved at: {file_path}")  # Debugging line
+            try:
+                # Save the uploaded file
+                fs = FileSystemStorage()
+                filename = fs.save(file.name, file)
+                file_path = fs.path(filename)
 
-            # Process the Excel file
-            df = clean_and_extract_relevant_columns(file_path)
+                # Process the Excel file
+                df = clean_and_extract_relevant_columns(file_path)
 
-            # Categorize claims using the GPT model
-            categorized_df = categorize_claims(df, model, prompt)
+                # Total number of rows in the Excel file (to use for request counting)
+                total_rows = len(df)
+                print(f"Total number of rows: {total_rows}")
 
-            # Ensure the output directory exists (Custom Directory for GPT outputs)
-            output_dir = os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')
-            print(f"Output directory: {output_dir}")  # Debugging line
-            os.makedirs(output_dir, exist_ok=True)
+                # Categorize claims using the GPT model
+                categorized_df = categorize_claims(df, model, prompt)
 
-            # Generate the new filename with the selected prefix and project ID
-            project_id = GptResult.objects.count() + 1
-            output_filename = f"{prefix}_{project_id:04d}_{filename}"
-            output_file_path = os.path.join(output_dir, output_filename)
-            print(f"Output file path: {output_file_path}")  # Debugging line
-            save_to_excel(categorized_df, output_file_path)
+                # Ensure the output directory exists (Custom Directory for GPT outputs)
+                output_dir = os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')
+                os.makedirs(output_dir, exist_ok=True)
 
-            # Store the result in the database
-            GptResult.objects.create(
-                filename=output_filename,
-                file_path=output_file_path,
-                prompt=prompt,
-                model_used=model, # Assuming you have a field for storing the model used
-                created_by=request.user  # Assign the currently logged-in user
-            )
+                # Generate the new filename with the selected prefix and project ID
+                project_id = GptResult.objects.count() + 1
+                output_filename = f"{prefix}_{project_id:04d}_{filename}"
+                output_file_path = os.path.join(output_dir, output_filename)
 
-            # Save the prompt to the prompt history file
-            prompt_history_dir = os.path.join(settings.BASE_DIR, 'database', 'GPT', 'prompthistory')
-            os.makedirs(prompt_history_dir, exist_ok=True)
+                # Save the results to Excel
+                save_to_excel(categorized_df, output_file_path)
 
-            # Define the file path for the prompt history
-            prompt_history_file = os.path.join(prompt_history_dir, 'prompthistory.txt')
+                # Store the result in the database
+                GptResult.objects.create(
+                    filename=output_filename,
+                    file_path=output_file_path,
+                    prompt=prompt,
+                    model_used=model,
+                    created_by=request.user
+                )
 
-            # Append the prompt, model, and timestamp to the file
-            with open(prompt_history_file, 'a') as file:
-                file.write(f"Project: {prefix}_{project_id:04d}\nCreated by: {request.user.username}\nPrompt: {prompt}\nModel: {model}\nCreated at: {datetime.datetime.now()}\n\n")
+                # Redirect after processing
+                return redirect('gpt-categorize')
 
-            # Redirect after processing
-            return redirect('gpt-categorize')
+            except ValueError as e:
+
+                result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')).order_by('-created_at')
+                # Handle column validation error and display the message on the page
+                return render(request, 'calculator/gpt.html', {
+                    'form': form,
+                    'error_message': str(e)  # Pass the error message to the template
+                })
+
+            except Exception as e:
+                result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')).order_by('-created_at')
+                # Handle general errors and display the message on the page
+                return render(request, 'calculator/gpt.html', {
+                    'form': form,
+                    'error_message': f"Failed to process the Excel file: {str(e)}"  # General error message
+                })
+
     else:
         form = GPTForm()
 
-    result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR,'database', 'GPT', 'Categorization')).order_by('-created_at')
-    
+    result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')).order_by('-created_at')
+
     context = {
         'form': form,
         'result_files_gpt': result_files_gpt,
@@ -303,16 +314,6 @@ def gpt_categorize_view(request):
     
     return render(request, 'calculator/gpt.html', context)
 
-def get_progress(request):
-    total_rows = request.session.get('total_rows', 1)
-    rows_processed = request.session.get('rows_processed', 0)
-    
-    progress = {
-        'rows_processed': rows_processed,
-        'total_rows': total_rows,
-        'percentage': (rows_processed / total_rows) * 100
-    }
-    
-    return JsonResponse(progress)
+
 
 
