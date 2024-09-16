@@ -41,12 +41,27 @@
                     <option value="TIPX">TIPX</option>
                 </select>
             </div>
-    
+            
+            
+            
             <div class="form-group">
                 {{ form.file.label_tag }}
                 <label class="custom-file-upload">
                     {{ form.file }}
                     Browse
+                </label>
+            </div>
+
+            <!-- New: Add column selection -->
+            <div class="form-group gpt-checkbox-group">
+                <label>
+                    <input type="checkbox" name="columns" value="First Claim" checked> First Claim
+                </label>
+                <label>
+                    <input type="checkbox" name="columns" value="Title"> Title
+                </label>
+                <label>
+                    <input type="checkbox" name="columns" value="Abstract"> Abstract
                 </label>
             </div>
     
@@ -55,9 +70,11 @@
                 {{ form.prompt }}
             </div>
     
+            
+    
             <button type="submit" class="btn">Submit</button>
         </form>
-
+    
         <!-- Error Message Display -->
         {% if error_message %}
         <div class="alert alert-danger" style="margin-top: 20px; color: red; font-weight: bold;">
@@ -105,6 +122,42 @@
     </form>
 </div>
 
+<script>
+    // Function to toggle dropdown visibility
+    function toggleDropdown(dropdownId) {
+        // Get all dropdowns and close them
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var dropdown = dropdowns[i];
+            if (dropdown.id !== dropdownId) {
+                dropdown.classList.remove('show'); // Close all other dropdowns
+            }
+        }
 
+        // Toggle the clicked dropdown
+        var currentDropdown = document.getElementById(dropdownId);
+        currentDropdown.classList.toggle('show');
+    }
 
+    // Function to insert the selected prompt into the prompt text area
+    function insertPrompt(promptText) {
+        var promptTextarea = document.querySelector('textarea[name="prompt"]');
+        if (promptTextarea) {
+            promptTextarea.value = promptText;
+        }
+    }
+
+    // Close dropdown if clicking outside
+    window.onclick = function(event) {
+        if (!event.target.matches('.dropdown-btn')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            for (var i = 0; i < dropdowns.length; i++) {
+                var openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
+                }
+            }
+        }
+    }
+</script>
 {% endblock %}

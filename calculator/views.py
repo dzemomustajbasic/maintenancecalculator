@@ -256,17 +256,20 @@ def gpt_categorize_view(request):
             model = form.cleaned_data['model']
             prefix = request.POST.get('prefix', 'TIPA')  # Default to TIPA if not selected
 
+            # Get the user-selected columns
+            selected_columns = request.POST.getlist('columns')
+
             try:
                 # Save the uploaded file
                 fs = FileSystemStorage()
                 filename = fs.save(file.name, file)
                 file_path = fs.path(filename)
 
-                # Process the Excel file
-                df = clean_and_extract_relevant_columns(file_path)
+                # Process the Excel file (extract selected columns)
+                df = clean_and_extract_relevant_columns(file_path, selected_columns)
 
                 # Categorize claims using the GPT model
-                categorized_df = categorize_claims(df, model, prompt)
+                categorized_df = categorize_claims(df, model, prompt, selected_columns)
 
                 # Ensure the output directory exists
                 output_dir = os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')
@@ -292,7 +295,6 @@ def gpt_categorize_view(request):
                 return redirect('gpt-categorize')
 
             except GPTInvalidColumnsError as e:
-                # Handle incorrect column naming error
                 result_files_gpt = GptResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'GPT', 'Categorization')).order_by('-created_at')
                 return render(request, 'calculator/gpt.html', {
                     'form': form,

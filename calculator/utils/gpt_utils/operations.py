@@ -81,20 +81,18 @@ def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
     return responses
 
     
-def clean_and_extract_relevant_columns(excel_file_path):
+def clean_and_extract_relevant_columns(excel_file_path, selected_columns):
     try:
         df = pd.read_excel(excel_file_path)
         
-        # Check if required columns exist
-        required_columns = ['Patent/ Publication Number', 'First Claim', 'GPT Category']
+        required_columns = ['Patent/ Publication Number'] + selected_columns
         missing_columns = [col for col in required_columns if col not in df.columns]
         
         if missing_columns:
             raise GPTInvalidColumnsError(missing_columns, required_columns)
 
-        # Retain only the relevant columns
+        # Retain only selected columns
         df = df[required_columns]
-
         return df
     except FileNotFoundError:
         raise FileNotFoundError(f"The specified Excel file was not found: {excel_file_path}")
@@ -104,21 +102,31 @@ def clean_and_extract_relevant_columns(excel_file_path):
         raise Exception(f"Failed to process the Excel file: {str(e)}")
 
 
-def categorize_claims(df, model, prompt):
-    gpt_categories = []
+def categorize_claims(df, model, prompt, selected_columns):
+    gpt_results = []
+
+    # Define labels for each column
+    column_labels = {
+        'First Claim': 'First Claim: ',
+        'Title': 'Title: ',
+        'Abstract': 'Abstract: ',
+    }
 
     for i, row in df.iterrows():
         try:
-            gpt_category = call_gpt_model(model, prompt, row['First Claim'])
-            gpt_categories.append(gpt_category)
-            print(f"Row {i} processed.")
+            # Construct input_text with labels
+            input_text = ' '.join([f"{column_labels[col]}{str(row[col])}" for col in selected_columns if col in row])
+            
+            # Combine the prompt and input_text
+            full_input = f"{prompt}\n\n{input_text}"
+
+            # Pass to GPT model
+            gpt_category = call_gpt_model(model, prompt, full_input)
+            gpt_results.append(gpt_category)
         except Exception as e:
-            gpt_categories.append(f"Error categorizing: {str(e)}")
-            print(f"Error on row {i}: {str(e)}")
+            gpt_results.append(f"Error categorizing: {str(e)}")
 
-    df['GPT Category'] = gpt_categories
-    df = df[['Patent/ Publication Number', 'First Claim', 'GPT Category']]
-
+    df['GPT Category'] = gpt_results
     return df
 
 

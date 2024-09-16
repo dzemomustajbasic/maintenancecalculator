@@ -737,6 +737,38 @@ a {
     border-radius: 4px;
 }
 
+/* Horizontal checkbox group specifically for GPT page */
+.gpt-checkbox-group label {
+    display: inline-block;
+    margin-right: 20px; /* Adds spacing between checkboxes */
+}
+
+.gpt-checkbox-group input[type="checkbox"] {
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    background-color: #444;
+    border: 2px solid #888;
+    border-radius: 4px;
+    transition: background-color 0.3s ease;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.gpt-checkbox-group input[type="checkbox"]:checked {
+    background-color: #4CAF50; /* Green background when checked */
+    border-color: #4CAF50;
+}
+
+.gpt-checkbox-group input[type="checkbox"]:hover {
+    background-color: #555; /* Darker background on hover */
+}
+
+.gpt-checkbox-group label {
+    font-weight: bold;
+    color: #e0e0e0;
+    cursor: pointer;
+}
 /* Dropdown Button */
 .dropdown-btn {
     background-color: #555;
@@ -763,6 +795,7 @@ a {
     margin-top: 5px;
     padding: 10px;
 }
+
 
 .dropdown-content .prompt-link {
     display: block;

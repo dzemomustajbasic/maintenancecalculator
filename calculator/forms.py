@@ -13,8 +13,13 @@ class GPTForm(forms.Form):
     MODEL_CHOICES = [
         ('gpt-4o-mini', 'GPT-4o-Mini'),
         ('gpt-3.5-turbo-0125', 'GPT-3.5-Turbo'),
-        # You can add more models here later
     ]
-    
     model = forms.ChoiceField(choices=MODEL_CHOICES, label='Select Model')
 
+    # New field for column selection
+    COLUMNS_CHOICES = [
+        ('First Claim', 'First Claim'),
+        ('Title', 'Title'),
+        ('Abstract', 'Abstract'),
+    ]
+    columns = forms.MultipleChoiceField(choices=COLUMNS_CHOICES, widget=forms.CheckboxSelectMultiple, required=True)
