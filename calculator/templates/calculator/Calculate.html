@@ -8,18 +8,25 @@
 
         <!-- User Manual Section -->
         <div class="calc-user-manual">
-            <h3>Instructions for Uploading Files</h3>
-            <p>Please make sure your Excel file contains the following columns:</p>
+            <h3>About the Maintenance Fee Calculator</h3>
+            <p>This tool calculates patent maintenance fees for <strong>Active Granted Patents</strong>.</p>
+
+            <h3>How to Prepare Your Excel File</h3>
+            <p>Your Excel file must be in <strong>.xlsx</strong> format and include the following columns, all of which should be fully populated:</p>
             <ul>
                 <li><strong>Patent/ Publication Number</strong></li>
                 <li><strong>Publication Country</strong></li>
-                <li><strong>Priority Date</strong></li>
+                <li><strong>Type</strong></li>
                 <li><strong>File Date</strong></li>
                 <li><strong>Publication Date</strong></li>
                 <li><strong>Est. Expiration Date</strong></li>
                 <li><strong>Number of claims</strong></li>
             </ul>
-            <p>The file must be in .xlsx format and should not contain any empty rows or irrelevant data.</p>
+
+            <h3>How the Tool Works</h3>
+            <p>The tool calculates maintenance fees based on publication date, file date, and country. If the <em>Date Type</em> column shows <strong>"None"</strong>, the fee has been set to 0, either because the patent is not granted or we don't have data for that country. Plesae feel free to update the FeesDollars file with the country code and appropriate fees</p>
+            
+
         </div>
 
         <!-- File Upload Form -->
@@ -50,31 +57,36 @@
     </div>
 
     <!-- Right: Fees Dollars Section -->
-    <div class="calc-fees-container">
-        <h2 class="fees-heading">Available countries and their codes:</h2>
+    <!-- Right: Fees Dollars Section -->
+<div class="calc-fees-container">
+    <h2 class="fees-heading">Available Countries and Their Codes</h2>
 
-        <div class="dropdown-container">
-            <input type="text" id="country-search" class="dropdown-search" placeholder="Search for a country">
-            <select id="country-list" class="dropdown-menu" size="10">
-                {% for code, data in country_codes_and_names.items %}
-                    <option value="{{ code }}">{{ code }}: {{ data.country }} ({{ data.type }})</option>
-                {% endfor %}
-            </select>
-        </div>
+    <p>Below is a list of available country codes along with their respective fee types. You are free to update the database with new country codes and their appropriate fees by downloading the existing fees file, making the necessary updates, and re-uploading it. Please ensure that you follow the format and structure of the file to avoid errors.</p>
 
-        <div class="fees-button-container">
-            <!-- Download Button -->
-            <a href="{% url 'download_fees' %}" class="btn fees-download-btn" style="max-width: 90%;">Download FeesDollars.xlsx</a>
-        </div>
+    <div class="dropdown-container">
+        <input type="text" id="country-search" class="dropdown-search" placeholder="Search for a country">
+        <select id="country-list" class="dropdown-menu" size="10">
+            {% for code, data in country_codes_and_names.items %}
+                <option value="{{ code }}">{{ code }}: {{ data.country }} ({{ data.type }})</option>
+            {% endfor %}
+        </select>
+    </div>
 
-        <!-- Upload Form -->
-        <form method="post" action="{% url 'upload_fees' %}" enctype="multipart/form-data" class="fees-upload-form">
-            {% csrf_token %}
-            <label class="fees-custom-file-upload">
-                <input type="file" name="fees_file" accept=".xlsx" required>
-            </label>
-            <button type="submit" class="btn fees-upload-btn">Upload Updated File</button>
-        </form>
+    <div class="fees-button-container">
+        <!-- Download Button -->
+        <a href="{% url 'download_fees' %}" class="btn fees-download-btn" style="max-width: 90%;">Download FeesDollars.xlsx</a>
+    </div>
+
+    <!-- Upload Form -->
+    <form method="post" action="{% url 'upload_fees' %}" enctype="multipart/form-data" class="fees-upload-form">
+        {% csrf_token %}
+        <label class="fees-custom-file-upload">
+            <input type="file" name="fees_file" accept=".xlsx" required>
+        </label>
+        <button type="submit" class="btn fees-upload-btn">Upload Updated File</button>
+    </form>
+
+    
     </div>
 </div>
 

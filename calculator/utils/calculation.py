@@ -21,7 +21,6 @@ def check_year_inclusion(date, date_type):
     return include_current_year
 
 def post_process_fees(results_df):
-
     today = pd.Timestamp.today().date()
     current_year = today.year
 
@@ -29,6 +28,10 @@ def post_process_fees(results_df):
         filing_date = row['File Date']
         issued_date = row['Publication Date']
         date_type = row['Date Type']  # Get the date type from the DataFrame
+
+        # Skip processing for "none" date type
+        if date_type == "none":
+            continue
 
         # Determine the appropriate date based on the date type
         date_to_check = issued_date if date_type == 'publication date' else filing_date
@@ -42,11 +45,21 @@ def post_process_fees(results_df):
     return results_df
 
 def date_check(patent, date_types, fees_info, results_df, index):
-
-    patent_number, priority_date, filing_date, issued_date, expiration_date, country, numofclaims = patent
+    patent_number, type, filing_date, issued_date, expiration_date, country, numofclaims = patent
     date_type = date_types.get(patent_number, '').lower()
 
-    # Check date type and calculate fees accordingly
+    # Check if Type is not "Grant", and mark it as "none" if that's the case
+    if type.lower() != "grant":
+        date_type = "none"
+
+    # Handle "none" date type by setting fees to 0
+    if date_type == "none":
+        for year in range(datetime.date.today().year, expiration_date.year + 1):
+            results_df.at[index, str(year)] = 0
+        results_df.at[index, 'Date Type'] = "none"
+        return results_df
+
+    # Proceed with normal fee calculation if type is "Grant"
     if date_type == 'publication date':
         fees_by_year = calculate_fees_issued_date(patent, fees_info)
     elif date_type == 'file date':
@@ -75,8 +88,10 @@ def calculate_fees_issued_date(patent_info, fees_info):
     print(f"Calculating issued date fees for patent {patent_number} in country {country}")
 
     if country not in fees_info.columns or (country == 'JP' and 'JPPC' not in fees_info.columns):
-        raise ValueError(f"Fees data for country code {country} or JPPC not found.")
-    
+        # Log warning instead of raising an error
+        print(f"Warning: Fees data for country code {country} or JPPC not found. Skipping this patent.")
+        return []
+
     country_fees = fees_info[country].dropna().values  # Drop NA values and get the fees as a list
     print(f"Country fees for {country}: {country_fees}")
 
@@ -103,7 +118,9 @@ def calculate_fees_issued_date(patent_info, fees_info):
     elif country == 'SK':
         return calculate_fees_sk(patent_info, country_fees)
     else:
-        raise ValueError(f"Unsupported country code for issued date calculation: {country}")
+        # Log warning if the country code is unsupported
+        print(f"Warning: Unsupported country code for issued date calculation: {country}. Skipping this patent.")
+        return []
     
 def calculate_fees_us(patent_info, country_fees):
 
@@ -140,14 +157,18 @@ def calculate_fees_filing_date(patent_info, fees_info):
     
     # Get the fees data for the country
     if country not in fees_info.columns:
-        raise ValueError(f"Fees data for country code {country} not found.")
-    
+        # Log warning instead of raising an error
+        print(f"Warning: Fees data for country code {country} not found. Skipping this patent.")
+        return []
+
     country_fees = fees_info[country].fillna(0).values  # Replace NA values with 0 and get the fees as a list
     
     # Select the fees starting from today's year
     if remaining_years > len(country_fees):
-        raise ValueError(f"Not enough fee data available for country code {country}.")
-    
+        # Log warning and return empty list if there's not enough fee data
+        print(f"Warning: Not enough fee data available for country code {country}. Skipping this patent.")
+        return []
+
     selected_fees = country_fees[-remaining_years:]
     
     # Map the selected fees to the corresponding years

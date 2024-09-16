@@ -132,7 +132,7 @@ def calculate_fees_view(request):
                 results_df = post_process_fees(results_df)
                 results_df = add_total_fees_per_patent(results_df)
                 results_df = calculate_grand_total(results_df)
-                results_df = results_df.drop(columns=['Date Type'])
+                #results_df = results_df.drop(columns=['Date Type'])
 
                 results_df.to_excel(output_file_path, index=False)
                 create_overview_sheet(output_file_path)
@@ -174,12 +174,18 @@ def calculate_fees_view(request):
     return render(request, 'calculator/calculate.html', context)
 
 def render_error_page(request, form, error_message):
-    result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')).order_by('-created_at')
+    result_files_calculation = CalculationResult.objects.filter(
+        file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')
+    ).order_by('-created_at')
+
+    # Ensure country_codes_and_names is passed when rendering the error
+    country_codes_and_names = locate_country_codes_and_names(request)
 
     return render(request, 'calculator/calculate.html', {
         'form': form,
         'error_message': error_message,
-        'result_files_calculation': result_files_calculation
+        'result_files_calculation': result_files_calculation,
+        'country_codes_and_names': country_codes_and_names  # Add this line to ensure it's passed
     })
 
 #result_files_calculation = CalculationResult.objects.filter(file_path__startswith=os.path.join(settings.BASE_DIR, 'database', 'calculator')).order_by('-created_at')

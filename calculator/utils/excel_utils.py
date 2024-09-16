@@ -20,7 +20,7 @@ def read_patent_data(file_path):
     necessary_columns = [
         'Patent/ Publication Number', 
         'Publication Country', 
-        'Priority Date', 
+        'Type', 
         'File Date', 
         'Publication Date', 
         'Est. Expiration Date', 
@@ -55,13 +55,13 @@ def extract_patent_info(patent_df):
         # Extract relevant information
         patent_number = row['Patent/ Publication Number']  # Change from 'Patent / Publication Number'
         country = row['Publication Country']  # Change from 'Country Code'
-        priority_date = row['Priority Date']
+        type = row['Type'] # Added
         filing_date = row['File Date']  # Change from 'Filing Date'
         issued_date = row['Publication Date']  # Change from 'Issued Date'
         expiration_date = row['Est. Expiration Date']  # Change from 'Expiration Date'
         numofclaims = row['Number of claims']  # Change from 'Number of Claims'
 
         # Append the extracted information as a tuple to the patent_info list
-        patent_info.append((patent_number, priority_date, filing_date, issued_date, expiration_date, country, numofclaims))
+        patent_info.append((patent_number, type, filing_date, issued_date, expiration_date, country, numofclaims))
 
     return patent_info
