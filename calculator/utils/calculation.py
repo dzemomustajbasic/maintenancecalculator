@@ -2,7 +2,7 @@ import datetime
 import pandas as pd
 import numpy as np
 
-
+## todo add exception for blank dates etc, add us per year overview, and non us overview
 def check_year_inclusion(date, date_type):
 
     today = pd.Timestamp.today().date()
