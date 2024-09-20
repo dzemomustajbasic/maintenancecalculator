@@ -12,7 +12,6 @@
             <div id="tipa-dropdown" class="dropdown-content">
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPA Prompt 1')">TIPA Prompt 1</a>
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPA Prompt 2')">TIPA Prompt 2</a>
-                <!-- Add more TIPA prompts here -->
             </div>
         </div>
 
@@ -22,7 +21,6 @@
             <div id="tipx-dropdown" class="dropdown-content">
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPX Prompt 1')">TIPX Prompt 1</a>
                 <a href="#" class="prompt-link" onclick="insertPrompt('This is the full text of Example TIPX Prompt 2')">TIPX Prompt 2</a>
-                <!-- Add more TIPX prompts here -->
             </div>
         </div>
     </div>
@@ -43,7 +41,7 @@
                     <option value="TIPX">TIPX</option>
                 </select>
             </div>
-    
+            
             <div class="form-group">
                 {{ form.file.label_tag }}
                 <label class="custom-file-upload">
@@ -51,17 +49,29 @@
                     Browse
                 </label>
             </div>
+
+            <!-- New: Add column selection -->
+            <div class="form-group gpt-checkbox-group">
+                <label>
+                    <input type="checkbox" name="columns" value="First Claim" checked> First Claim
+                </label>
+                <label>
+                    <input type="checkbox" name="columns" value="Title"> Title
+                </label>
+                <label>
+                    <input type="checkbox" name="columns" value="Abstract"> Abstract
+                </label>
+            </div>
     
             <div class="form-group">
                 {{ form.prompt.label_tag }}
                 {{ form.prompt }}
             </div>
-    
+            
             <button type="submit" class="btn">Submit</button>
         </form>
-
-
     </div>
+
     <!-- Right Side: Loading Section -->
     <div class="gpt-loading">
         <h3>Loading...</h3>
@@ -97,20 +107,65 @@
         <button type="submit" class="btn">Download Selected Files</button>
     </form>
 </div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2>Error</h2>
+        <p>{{ error_message }}</p>
+    </div>
+</div>
+
 <script>
-    function toggleDropdown(id) {
-        var dropdown = document.getElementById(id);
-        dropdown.classList.toggle('show');
+    // Function to toggle dropdown visibility
+    function toggleDropdown(dropdownId) {
+        // Get all dropdowns and close them
+        var dropdowns = document.getElementsByClassName("dropdown-content");
+        for (var i = 0; i < dropdowns.length; i++) {
+            var dropdown = dropdowns[i];
+            if (dropdown.id !== dropdownId) {
+                dropdown.classList.remove('show'); // Close all other dropdowns
+            }
+        }
+
+        // Toggle the clicked dropdown
+        var currentDropdown = document.getElementById(dropdownId);
+        currentDropdown.classList.toggle('show');
     }
 
+    // Function to insert the selected prompt into the prompt text area
     function insertPrompt(promptText) {
-        var promptField = document.getElementById('id_prompt'); // Ensure this matches the actual ID
-        if (promptField) {
-            promptField.value = promptText;
-        } else {
-            console.error('Prompt field not found.');
+        var promptTextarea = document.querySelector('textarea[name="prompt"]');
+        if (promptTextarea) {
+            promptTextarea.value = promptText;
         }
     }
-</script>
 
+    // Close dropdown if clicking outside
+    window.onclick = function(event) {
+        if (!event.target.matches('.dropdown-btn')) {
+            var dropdowns = document.getElementsByClassName("dropdown-content");
+            for (var i = 0; i < dropdowns.length; i++) {
+                var openDropdown = dropdowns[i];
+                if (openDropdown.classList.contains('show')) {
+                    openDropdown.classList.remove('show');
+                }
+            }
+        }
+    }
+
+    // Modal logic
+    function openModal() {
+        document.getElementById('errorModal').style.display = 'block';
+    }
+
+    function closeModal() {
+        document.getElementById('errorModal').style.display = 'none';
+    }
+
+    {% if error_message %}
+    openModal();
+    {% endif %}
+</script>
 {% endblock %}

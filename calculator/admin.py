@@ -9,7 +9,8 @@ delete_files.short_description = "Delete selected files"
 
 class GptResultAdmin(admin.ModelAdmin):
     list_display = ('filename', 'model_used', 'created_at')
-    search_fields = ('filename', 'model_used')
+    search_fields = ('filename', 'model_used', 'prompt')
+    list_filter = ('model_used', 'created_at')  # Optional: Add filters for easier navigation
     actions = [delete_files]  # Add the delete_files action to the admin panel
 
 class CalculationResultAdmin(admin.ModelAdmin):

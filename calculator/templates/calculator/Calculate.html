@@ -8,18 +8,23 @@
 
         <!-- User Manual Section -->
         <div class="calc-user-manual">
-            <h3>Instructions for Uploading Files</h3>
-            <p>Please make sure your Excel file contains the following columns:</p>
+            <h3>About the Maintenance Fee Calculator</h3>
+            <p>This tool calculates patent maintenance fees for <strong>Active Granted Patents</strong>.</p>
+
+            <h3>How to Prepare Your Excel File:</h3>
+            <p>Your Excel file must be in <strong>.xlsx</strong> format and include the following columns, all of which should be fully populated:</p>
             <ul>
-                <li><strong>Patent / Publication Number:</strong> The unique identifier for the patent.</li>
-                <li><strong>Country Code:</strong> The two-letter country code where the patent was filed.</li>
-                <li><strong>Priority Date:</strong> The earliest date of filing.</li>
-                <li><strong>Filing Date:</strong> The date when the patent was filed.</li>
-                <li><strong>Issued Date:</strong> The date when the patent was granted.</li>
-                <li><strong>Expiration Date:</strong> The date when the patent expires.</li>
-                <li><strong>Number of Claims:</strong> The number of claims made in the patent.</li>
+                <li><strong>Patent/ Publication Number </strong>  e.g. US988544</li>
+                <li><strong>Publication Country </strong>  e.g. US</li>
+                <li><strong>Type</strong>  e.g. Grant</li>
+                <li><strong>File Date </strong>  e.g. 10/13/2022</li>
+                <li><strong>Publication Date </strong>  e.g. 10/13/2022</li>
+                <li><strong>Est. Expiration Date </strong>  e.g. 10/13/2022</li>
+                <li><strong>Number of claims </strong>  e.g. 5</li>
             </ul>
-            <p>The file must be in .xlsx format and should not contain any empty rows or irrelevant data.</p>
+
+            <h3>How the Tool Works</h3>
+            <p>The tool calculates maintenance fees based on publication date, file date, and country. If the <em>Date Type</em> column shows <strong>"None"</strong>, the fee has been set to 0, either because the patent is not granted or we don't have data for that country. Please feel free to update the FeesDollars file with the country code and appropriate fees.</p>
         </div>
 
         <!-- File Upload Form -->
@@ -36,13 +41,6 @@
             <button type="submit" class="calc-btn">Submit</button>
         </form>
 
-        <!-- Error Message Section at the Bottom -->
-        {% if error_message %}
-        <div class="alert alert-danger" style="color: red; font-weight: bold; margin-top: 20px;">
-            <strong>Error:</strong> {{ error_message }}
-        </div>
-        {% endif %}
-
         {% if download_url %}
             <a href="{{ download_url }}" class="calc-btn calc-btn-success">Download File</a>
         {% endif %}
@@ -50,11 +48,22 @@
 
     <!-- Right: Fees Dollars Section -->
     <div class="calc-fees-container">
-        <h2 class="fees-heading">Fees Dollars</h2>
+        <h2 class="fees-heading">Available Countries and Their Codes</h2>
+
+        <p>Below is a list of available country codes along with their respective fee types. You are free to update the database with new country codes and their appropriate fees by downloading the existing fees file, making the necessary updates, and re-uploading it. Please ensure that you follow the format and structure of the file to avoid errors.</p>
+
+        <div class="dropdown-container">
+            <input type="text" id="country-search" class="dropdown-search" placeholder="Search for a country">
+            <select id="country-list" class="dropdown-menu" size="10">
+                {% for code, data in country_codes_and_names.items %}
+                    <option value="{{ code }}">{{ code }}: {{ data.country }} ({{ data.type }})</option>
+                {% endfor %}
+            </select>
+        </div>
 
         <div class="fees-button-container">
             <!-- Download Button -->
-            <a href="{% url 'download_fees' %}" class="btn fees-download-btn">Download FeesDollars.xlsx</a>
+            <a href="{% url 'download_fees' %}" class="btn fees-download-btn" style="max-width: 90%;">Download FeesDollars.xlsx</a>
         </div>
 
         <!-- Upload Form -->
@@ -62,7 +71,6 @@
             {% csrf_token %}
             <label class="fees-custom-file-upload">
                 <input type="file" name="fees_file" accept=".xlsx" required>
-                Choose File
             </label>
             <button type="submit" class="btn fees-upload-btn">Upload Updated File</button>
         </form>
@@ -86,6 +94,7 @@
                                     <input type="checkbox" name="selected_files" value="{{ file.filename }}" class="calc-file-checkbox">
                                     <span class="calc-file-name">{{ file.filename }}</span>
                                     <span class="calc-file-date">By: {{ file.created_by.username }} on {{ file.created_at|date:"Y-m-d" }}</span>
+                                </label>
                             </li>
                         {% endfor %}
                     </ul>
@@ -95,4 +104,52 @@
         <button type="submit" class="calc-btn">Download Selected Files</button>
     </form>
 </div>
+
+<!-- Error Modal -->
+<div id="errorModal" class="modal">
+    <div class="modal-content">
+        <span class="close-btn" onclick="closeModal()">&times;</span>
+        <h2>Error</h2>
+        <p>{{ error_message }}</p>
+    </div>
+</div>
+
+<script>
+    // Function to open the modal
+    function openModal() {
+        document.getElementById('errorModal').style.display = 'block';
+    }
+
+    // Function to close the modal
+    function closeModal() {
+        document.getElementById('errorModal').style.display = 'none';
+    }
+
+    // Check if there's an error message, and open the modal if so
+    {% if error_message %}
+    openModal();
+    {% endif %}
+
+    // Country search functionality
+    document.addEventListener('DOMContentLoaded', () => {
+        const countrySearch = document.getElementById('country-search');
+
+        function filterOptions() {
+            const filter = countrySearch.value.toLowerCase();
+            const select = document.getElementById('country-list');
+            const options = select.options;
+
+            for (let i = 0; i < options.length; i++) {
+                const text = options[i].textContent || options[i].innerText;
+                if (text.toLowerCase().includes(filter)) {
+                    options[i].style.display = '';
+                } else {
+                    options[i].style.display = 'none';
+                }
+            }
+        }
+
+        countrySearch.addEventListener('input', filterOptions);
+    });
+</script>
 {% endblock %}

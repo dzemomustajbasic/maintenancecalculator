@@ -4,12 +4,11 @@ import time
 import pandas as pd
 from openai import OpenAI
 import threading
+from .exceptions import GPTInvalidColumnsError 
 
 # Učitavanje konfiguracije
 def load_config():
-    """
-    Load the configuration file to retrieve the OpenAI API key.
-    """
+   
     # Get the directory of the current file (which is utils/gpt_utils)
     current_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -24,17 +23,7 @@ def load_config():
 
 # Funkcija za pozivanje GPT modela
 def call_gpt_model(model, prompt, input_text):
-    """
-    Call the GPT model to categorize the input text based on the given prompt.
-    
-    Parameters:
-    - model: The GPT model to use (e.g., 'gpt-4o-mini').
-    - prompt: The prompt used for the categorization.
-    - input_text: The text to be analyzed and categorized.
-    
-    Returns:
-    - The category name or an error message.
-    """
+   
     config = load_config()
     api_key = config.get('OPENAI_API_KEY')
 
@@ -77,7 +66,7 @@ def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
     # Funkcija za kontrolisanje slanja zahteva prema API rate limitu
     def request_with_delay(i):
         time.sleep(i / rate_limit_per_second)  # Osigurava da se zahtevi ne šalju prebrzo
-        call_gpt_model(model, prompt, inputs[i], responses, i, api_key)
+        call_gpt_model(model, prompt, inputs[i])
 
     # Kreiraj niti za svaki API poziv i postavi odgodu između njih
     for i in range(len(inputs)):
@@ -92,43 +81,54 @@ def handle_multiple_requests(model, prompt, inputs, rate_limit_per_second=1):
     return responses
 
     
-def clean_and_extract_relevant_columns(excel_file_path):
-    """
-    Load an Excel file and retain only the 'Patent / Publication Number', 'Title', and 'First Claim' columns.
-    """
+def clean_and_extract_relevant_columns(excel_file_path, selected_columns):
     try:
-        # Read the Excel file
         df = pd.read_excel(excel_file_path)
         
-        # Check if required columns exist
-        required_columns = ['Patent / Publication Number', 'Claim/Title']
-        if not all(col in df.columns for col in required_columns):
-            raise ValueError(f"Excel file must contain the following columns: {', '.join(required_columns)}")
+        required_columns = ['Patent/ Publication Number'] + selected_columns
+        missing_columns = [col for col in required_columns if col not in df.columns]
+        
+        if missing_columns:
+            raise GPTInvalidColumnsError(missing_columns, required_columns)
 
-        # Retain only the relevant columns
+        # Retain only selected columns
         df = df[required_columns]
-
         return df
     except FileNotFoundError:
         raise FileNotFoundError(f"The specified Excel file was not found: {excel_file_path}")
+    except GPTInvalidColumnsError as e:
+        raise e  # Rethrow the custom exception
     except Exception as e:
         raise Exception(f"Failed to process the Excel file: {str(e)}")
 
 
-def categorize_claims(df, model, prompt):
-    gpt_categories = []
+def categorize_claims(df, model, prompt, selected_columns):
+    gpt_results = []
 
-    for _, row in df.iterrows():
+    # Define labels for each column
+    column_labels = {
+        'First Claim': 'First Claim: ',
+        'Title': 'Title: ',
+        'Abstract': 'Abstract: ',
+    }
+
+    for i, row in df.iterrows():
         try:
-            gpt_category = call_gpt_model(model, prompt, row['Claim/Title'])
-            gpt_categories.append(gpt_category)
+            # Construct input_text with labels
+            input_text = ' '.join([f"{column_labels[col]}{str(row[col])}" for col in selected_columns if col in row])
+            
+            # Combine the prompt and input_text
+            full_input = f"{prompt}\n\n{input_text}"
+
+            # Pass to GPT model
+            gpt_category = call_gpt_model(model, prompt, full_input)
+            gpt_results.append(gpt_category)
         except Exception as e:
-            gpt_categories.append(f"Error categorizing: {str(e)}")
+            gpt_results.append(f"Error categorizing: {str(e)}")
 
-    df['GPT Category'] = gpt_categories
-    df = df[['Patent / Publication Number', 'Claim/Title', 'GPT Category']]
-
+    df['GPT Category'] = gpt_results
     return df
+
 
 def save_to_excel(df, output_file_path):
     

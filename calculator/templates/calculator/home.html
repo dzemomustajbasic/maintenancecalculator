@@ -3,5 +3,14 @@
 {% block title %}Home{% endblock %}
 
 {% block content %}
-<h1 style="color: #e0e0e0; font-weight: normal;">Welcome, {{ user }}!</h1>
+    <div class="container-home">
+        <div class="flex-item">
+            <a href="{% url 'calculate_fees' %}">Maintenance Calculator</a>
+        </div>
+        <div class="flex-item">
+            <a href="{% url 'gpt-categorize' %}">GPT Categorize</a>
+        </div>
+    </div>
 {% endblock %}
+
+
