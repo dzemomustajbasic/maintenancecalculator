@@ -1,1 +1,1 @@
-Full stack Django web application for calculating patent fees and patent categorizing using gpt api.
+A full-stack Django web application designed for calculating patent fees and categorizing patents using the GPT API.
